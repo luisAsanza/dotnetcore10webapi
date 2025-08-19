@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Autofac;
+using Microsoft.AspNetCore.Mvc;
 using ServiceContracts;
 
 namespace DIExample.Controllers
@@ -6,12 +7,16 @@ namespace DIExample.Controllers
     public class HomeController : Controller
     {
         private readonly ICitiesService _citiesService;
+        //To add child scope service using dotnet core IoC
         private readonly IServiceScopeFactory _serviceScopeFactory;
+        //To add child scope using Autofac
+        private readonly ILifetimeScope _lifetimeScope;
 
-        public HomeController(ICitiesService citiesService, IServiceScopeFactory serviceScopeFactory)
+        public HomeController(ICitiesService citiesService, IServiceScopeFactory serviceScopeFactory, ILifetimeScope lifetimeScope)
         {
             _citiesService = citiesService;
             _serviceScopeFactory = serviceScopeFactory;
+            _lifetimeScope = lifetimeScope;
         }
 
         [Route("/")]
@@ -20,9 +25,18 @@ namespace DIExample.Controllers
             var cities = _citiesService.GetCities();
             List<string> citiesInChildScope = new List<string>();
 
-            using (IServiceScope scope = _serviceScopeFactory.CreateScope()) {
-                var citiesService = scope.ServiceProvider.GetService<ICitiesService>();
-                citiesInChildScope = citiesService == null ? new List<string>() :  citiesService.GetCities();
+            //Create a child scope service using dotnet IoC
+            //using (IServiceScope scope = _serviceScopeFactory.CreateScope()) {
+            //    var citiesService = scope.ServiceProvider.GetService<ICitiesService>();
+            //    citiesInChildScope = citiesService == null ? new List<string>() :  citiesService.GetCities();
+            //}
+
+            //Create a child scope service using AUTOFAC
+            using (ILifetimeScope lifetimeScope = _lifetimeScope.BeginLifetimeScope())
+            {
+                //Inject citiesService
+                ICitiesService citiesService = lifetimeScope.Resolve<ICitiesService>();
+                citiesInChildScope = citiesService.GetCities();
             }
 
 
