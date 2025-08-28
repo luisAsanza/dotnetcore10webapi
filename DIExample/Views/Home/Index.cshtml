@@ -4,6 +4,7 @@
     ViewBag.Title = "Home";
 }
 
+<h1>Environment Name: @ViewBag.Environment</h1>
 <h1>Cities</h1>
 @{
     List<string> citiesFromServiceInView = citiesServiceInView.GetCities();
@@ -14,3 +15,6 @@
         <li>@city</li>
     }
 </ul>
+<environment include="Development">
+    <button class="button button-blue-back">Button only for Development Environment</button>
+</environment>

@@ -11,15 +11,20 @@ namespace DIExample.Controllers
         private readonly IServiceScopeFactory _serviceScopeFactory;
         //To add child scope using Autofac
         private readonly ILifetimeScope _lifetimeScope;
+        //
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public HomeController(ICitiesService citiesService, IServiceScopeFactory serviceScopeFactory, ILifetimeScope lifetimeScope)
+        public HomeController(ICitiesService citiesService, IServiceScopeFactory serviceScopeFactory, 
+            ILifetimeScope lifetimeScope, IWebHostEnvironment webHostEnvironment)
         {
             _citiesService = citiesService;
             _serviceScopeFactory = serviceScopeFactory;
             _lifetimeScope = lifetimeScope;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         [Route("/")]
+        [Route("some-route")]
         public IActionResult Index()
         {
             var cities = _citiesService.GetCities();
@@ -39,8 +44,16 @@ namespace DIExample.Controllers
                 citiesInChildScope = citiesService.GetCities();
             }
 
+            ViewBag.Environment = $"{_webHostEnvironment.EnvironmentName} {_webHostEnvironment.ApplicationName} {_webHostEnvironment.ContentRootPath} {_webHostEnvironment.ContentRootFileProvider}";
+
 
             return View(citiesInChildScope);
+        }
+
+        [Route("some-route")]
+        public IActionResult Other()
+        {
+            return View();
         }
     }
 }
