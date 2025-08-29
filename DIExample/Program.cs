@@ -15,6 +15,8 @@ builder.Services.AddControllersWithViews();
 //Register a service to supply an object of type WeatherApiOptions with weatherapi configurations loaded.
 builder.Services.Configure<WeatherApiOptions>(builder.Configuration.GetSection("weatherapi"));
 
+//Load configuration from a custom json file
+builder.Configuration.AddJsonFile("MyOwnConfig.json", optional: true, reloadOnChange: true);
 
 //INJECT DEPENDENCIES USING DOTNETCORE IoC CONTAINER
 //builder.Services.Add(new ServiceDescriptor(typeof(ICitiesService), typeof(CitiesService), ServiceLifetime.Scoped));
@@ -55,6 +57,7 @@ app.UseEndpoints(endpoints =>
         await context.Response.WriteAsync(app.Configuration.GetValue<int>("x", 10).ToString());
     });
 });
+
 
 app.MapControllers();
 

@@ -66,8 +66,12 @@ namespace DIExample.Controllers
             //ViewBag.WeatherSecret = weatherOptions.ClientSecret;
 
             //Weather options object injected as a service
-            ViewBag.WeatherApiKey = weatherOptionsFromService.Value.ClientID;
-            ViewBag.WeatherSecret = weatherOptionsFromService.Value.ClientSecret;
+            //ViewBag.WeatherApiKey = weatherOptionsFromService.Value.ClientID;
+            //ViewBag.WeatherSecret = weatherOptionsFromService.Value.ClientSecret;
+
+            //Read configuration from custom json file
+            ViewBag.WeatherApiKey = configuration.GetValue<string>("weatherapi:ClientID");
+            ViewBag.WeatherSecret = configuration.GetValue<string>("weatherapi:ClientTest");
 
             return View(citiesInChildScope);
         }
