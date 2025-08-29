@@ -4,7 +4,10 @@
     ViewBag.Title = "Home";
 }
 
-<h1>Environment Name: @ViewBag.Environment</h1>
+<p>@ViewBag.ConfigurationExample1</p>
+<p>@ViewBag.ConfigurationExample2</p>
+<p>@ViewBag.WeatherApiKey</p>
+<p>@ViewBag.WeatherSecret</p>
 <h1>Cities</h1>
 @{
     List<string> citiesFromServiceInView = citiesServiceInView.GetCities();

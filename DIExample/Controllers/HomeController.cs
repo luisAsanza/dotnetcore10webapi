@@ -1,5 +1,7 @@
 ﻿using Autofac;
+using DIExample.Configuration;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using ServiceContracts;
 
 namespace DIExample.Controllers
@@ -25,7 +27,8 @@ namespace DIExample.Controllers
 
         [Route("/")]
         [Route("some-route")]
-        public IActionResult Index()
+        public IActionResult Index([FromServices] IConfiguration configuration, 
+            [FromServices] IOptions<WeatherApiOptions> weatherOptionsFromService)
         {
             var cities = _citiesService.GetCities();
             List<string> citiesInChildScope = new List<string>();
@@ -45,7 +48,26 @@ namespace DIExample.Controllers
             }
 
             ViewBag.Environment = $"{_webHostEnvironment.EnvironmentName} {_webHostEnvironment.ApplicationName} {_webHostEnvironment.ContentRootPath} {_webHostEnvironment.ContentRootFileProvider}";
+            ViewBag.ConfigurationExample1 = configuration.GetValue<string>("MyKey");
+            ViewBag.ConfigurationExample2 = configuration.GetValue<int>("x", 100);
 
+            //Use ":" to get nested properties
+            //ViewBag.WeatherApiKey = configuration.GetValue<string>("weatherapi:ClientID");
+            //ViewBag.WeatherSecret = configuration.GetValue<string>("weatherapi:clientsecret");
+
+            //Use GetSection to read keys only once
+            //var weatherConfiguratuionSection = configuration.GetSection("weatherapi");
+            //ViewBag.WeatherApiKey = weatherConfiguratuionSection["ClientID"];
+            //ViewBag.WeatherSecret = weatherConfiguratuionSection["ClientSecret"];
+
+            //Use class to load options into an object. Get<type> creates a new instance. Bind uses an existing instance
+            //WeatherApiOptions weatherOptions = configuration.GetSection("weatherapi").Get<WeatherApiOptions>();
+            //ViewBag.WeatherApiKey = weatherOptions.ClientID;
+            //ViewBag.WeatherSecret = weatherOptions.ClientSecret;
+
+            //Weather options object injected as a service
+            ViewBag.WeatherApiKey = weatherOptionsFromService.Value.ClientID;
+            ViewBag.WeatherSecret = weatherOptionsFromService.Value.ClientSecret;
 
             return View(citiesInChildScope);
         }

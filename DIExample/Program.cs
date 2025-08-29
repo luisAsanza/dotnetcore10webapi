@@ -1,5 +1,6 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using DIExample.Configuration;
 using ServiceContracts;
 using Services;
 
@@ -10,6 +11,9 @@ builder .Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 
 
 builder.Services.AddControllersWithViews();
+
+//Register a service to supply an object of type WeatherApiOptions with weatherapi configurations loaded.
+builder.Services.Configure<WeatherApiOptions>(builder.Configuration.GetSection("weatherapi"));
 
 
 //INJECT DEPENDENCIES USING DOTNETCORE IoC CONTAINER
