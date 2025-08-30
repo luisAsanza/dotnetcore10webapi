@@ -3,14 +3,18 @@ using Autofac.Extensions.DependencyInjection;
 using DIExample.Configuration;
 using ServiceContracts;
 using Services;
+using Services.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 //USE SERVICE PROVIDER FACTORY TO USE AUTOFAC IoC CONTAINER
-builder .Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
+//builder .Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddTransient<LoggingHandler>();
+builder.Services.AddTransient<SimpleRetryHandler>();
+builder.Services.AddHttpClient("FinnhubClient").AddHttpMessageHandler<LoggingHandler>().AddHttpMessageHandler<SimpleRetryHandler>();
 
 //Register a service to supply an object of type WeatherApiOptions with weatherapi configurations loaded.
 builder.Services.Configure<WeatherApiOptions>(builder.Configuration.GetSection("weatherapi"));
@@ -19,22 +23,25 @@ builder.Services.Configure<WeatherApiOptions>(builder.Configuration.GetSection("
 builder.Configuration.AddJsonFile("MyOwnConfig.json", optional: true, reloadOnChange: true);
 
 //INJECT DEPENDENCIES USING DOTNETCORE IoC CONTAINER
-//builder.Services.Add(new ServiceDescriptor(typeof(ICitiesService), typeof(CitiesService), ServiceLifetime.Scoped));
+builder.Services.Add(new ServiceDescriptor(typeof(ICitiesService), typeof(CitiesService), ServiceLifetime.Scoped));
 //Short hand method version:
-//builder.Services.AddScoped<ICitiesService, CitiesService>();
+builder.Services.AddScoped<ICitiesService, CitiesService>();
 
-//INJECT DEPENDENCIES USING AUTOFAC
-builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
-{
-    //Add Transient
-    //containerBuilder.RegisterType<CitiesService>().As<ICitiesService>().InstancePerDependency();
+//Register Stock service
+builder.Services.AddScoped<IFinnhubService, FinnhubService>();
 
-    //Add Scoped
-    containerBuilder.RegisterType<CitiesService>().As<ICitiesService>().InstancePerLifetimeScope();
+////INJECT DEPENDENCIES USING AUTOFAC
+//builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
+//{
+//    //Add Transient
+//    //containerBuilder.RegisterType<CitiesService>().As<ICitiesService>().InstancePerDependency();
 
-    //Add Singleton
-    //containerBuilder.RegisterType<CitiesService>().As<ICitiesService>().SingleInstance();
-});
+//    //Add Scoped
+//    containerBuilder.RegisterType<CitiesService>().As<ICitiesService>().InstancePerLifetimeScope();
+
+//    //Add Singleton
+//    //containerBuilder.RegisterType<CitiesService>().As<ICitiesService>().SingleInstance();
+//});
 
 var app = builder.Build();
 
@@ -48,7 +55,7 @@ app.UseRouting();
 
 app.UseEndpoints(endpoints =>
 {
-    endpoints.Map("configuration", async context =>
+    endpoints.Map("config-example", async context =>
     {
         //GetValue method returns an object. You can use GetValue<string> to return an string directly.
         await context.Response.WriteAsync(app.Configuration.GetValue<string>("myKey") + "\n");
