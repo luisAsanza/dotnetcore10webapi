@@ -4,6 +4,7 @@ using DIExample.Configuration;
 using ServiceContracts;
 using Services;
 using Services.Handlers;
+using Services.Providers.Finnhub;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,8 @@ builder.Services.AddHttpClient("FinnhubClient").AddHttpMessageHandler<LoggingHan
 
 //Register a service to supply an object of type WeatherApiOptions with weatherapi configurations loaded.
 builder.Services.Configure<WeatherApiOptions>(builder.Configuration.GetSection("weatherapi"));
+
+builder.Services.Configure<FinnhubOptions>(builder.Configuration.GetSection("finnhubapi"));
 
 //Load configuration from a custom json file
 builder.Configuration.AddJsonFile("MyOwnConfig.json", optional: true, reloadOnChange: true);
