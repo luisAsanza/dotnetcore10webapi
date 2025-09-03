@@ -8,7 +8,63 @@
 <p>@ViewBag.ConfigurationExample2</p>
 <p>@ViewBag.WeatherApiKey</p>
 <p>@ViewBag.WeatherSecret</p>
-<p>MSFT Current price: @ViewBag.CurrentPrice</p>
+<p></p>
+
+<div id="stockWidget" data-symbol="@ViewBag.StockSymbol" data-refresh="@ViewBag.SuggestedRefreshMs">
+    <p><strong>Symbol:</strong> <span id="stockSymbol">@ViewBag.StockSymbol</span></p>
+    <p><strong>Price:</strong> <span id="stockPrice">@ViewBag.StockPrice</span></p>
+    <p><small>Last updated: <span id="lastUpdated">just now</span></small></p>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+        //Find stock widget in the DOM and store it in const widget
+        const widget = document.getElementById("stockWidget");
+        
+        //Get stock symbol stored as dataset in the widget
+        const symbol = widget.dataset.symbol;
+        //Get the refresh time stored as dataset in the widget (if data set is loaded, if not just load the default value 2000)
+        let refreshMs = parseInt(widget.dataset.refresh) || 2000;
+
+        //Get spans that display labels
+        const priceSpan = document.getElementById("stockPrice");
+        const updatedSpan = document.getElementById("lastUpdated");
+
+        //Declare function that calls MVC method to get stock price and updates the DOM
+        async function fetchPrice(){
+            try{
+                //Make to call to the endpoint
+                const response = await fetch(`/stock-price?symbol=${encodeURIComponent(symbol)}`, { cache: "no-store" });
+
+                if (!response.ok) throw new Error("Network Error");
+
+                //Reads the response body stream and parse it (assuming it is json) to a native JavaScript object
+                const data = await response.json();
+                
+                //Update DOM
+                priceSpan.textContent = data.stockPrice;
+                updatedSpan.textContent = new Date(data.asOf).toLocaleString();
+
+                if(data.suggestedRefreshMs && !isNaN(data.suggestedRefreshMs)){
+                    refreshMs = data.suggestedRefreshMs;
+                }
+
+            } catch(err){
+                console.error("Error fetching price:", err);
+                updatedSpan.textContent = "Error (will retry)";
+                //Backoff if errors
+                refreshMs = Math.min(refreshMs * 2, 15000);
+            } finally{
+                setTimeout(fetchPrice, refreshMs);
+            }
+        }
+
+        //Start the loop
+        setTimeout(fetchPrice, refreshMs);
+    });
+</script>
+
+<p></p>
 <h1>Cities</h1>
 @{
     List<string> citiesFromServiceInView = citiesServiceInView.GetCities();
@@ -22,3 +78,4 @@
 <environment include="Development">
     <button class="button button-blue-back">Button only for Development Environment</button>
 </environment>
+

@@ -1,9 +1,11 @@
 ﻿//using Autofac;
 using DIExample.Configuration;
+using DIExample.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using ServiceContracts;
 using Services;
+using Services.Providers.Finnhub;
 
 namespace DIExample.Controllers
 {
@@ -18,22 +20,33 @@ namespace DIExample.Controllers
         private readonly IWebHostEnvironment _webHostEnvironment;
         //Stock service
         private readonly IFinnhubService _myServiceWithHttpClient;
+        private readonly IOptions<WeatherApiOptions> _weatherApiOptions;
+        //IOptionsMonitor gets refreshed everytime configuration changes.
+        private readonly IOptionsMonitor<FinnhubOptions> _finnhubOptions;
+        private readonly IConfiguration _configuration;
+        //For demo purposes
+        private const string _stockSymbol = "MSFT";
 
         public HomeController(ICitiesService citiesService, IServiceScopeFactory serviceScopeFactory, 
             IWebHostEnvironment webHostEnvironment,
-            IFinnhubService myServiceWithHttpClient)
+            IFinnhubService myServiceWithHttpClient,
+            IOptions<WeatherApiOptions> weatherApiOptions,
+            IOptionsMonitor<FinnhubOptions> finnhubOptions,
+            IConfiguration configuration)
         {
             _citiesService = citiesService;
             _serviceScopeFactory = serviceScopeFactory;
             //_lifetimeScope = lifetimeScope;
             _webHostEnvironment = webHostEnvironment;
             _myServiceWithHttpClient = myServiceWithHttpClient;
+            _weatherApiOptions = weatherApiOptions;
+            _finnhubOptions = finnhubOptions;
+            _configuration = configuration;
         }
 
         [Route("/")]
         [Route("some-route")]
-        public async Task<IActionResult> Index([FromServices] IConfiguration configuration, 
-            [FromServices] IOptions<WeatherApiOptions> weatherOptionsFromService)
+        public async Task<IActionResult> Index([FromServices] IConfiguration configuration)
         {
             var cities = _citiesService.GetCities();
             List<string> citiesInChildScope = new List<string>();
@@ -79,12 +92,35 @@ namespace DIExample.Controllers
             ViewBag.WeatherApiKey = configuration.GetValue<string>("weatherapi:ClientID");
             ViewBag.WeatherSecret = configuration.GetValue<string>("weatherapi:ClientTest");
 
-            var msftQuote = await _myServiceWithHttpClient.GetQuote("MSFT");
-            ViewBag.CurrentPrice = msftQuote["c"].ToString();
+            var msftQuote = await _myServiceWithHttpClient.GetQuote(_stockSymbol);
+            ViewBag.StockSymbol = _stockSymbol;
+            ViewBag.StockPrice = msftQuote["c"].ToString();
 
             return View(citiesInChildScope);
         }
 
+        [HttpGet]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        [Route("stock-price")]
+        public async Task<IActionResult> GetStockPrice(string stockSymbol)
+        {
+            var msftQuote = await _myServiceWithHttpClient.GetQuote(stockSymbol);
+
+            var model = new StockPriceModel()
+            {
+                StockSymbol = stockSymbol,
+                StockPrice = msftQuote["c"].ToString(),
+                SuggestedRefreshMs = _finnhubOptions.CurrentValue.SuggestedRefreshMs,
+                AsOf = DateTime.UtcNow
+            };
+
+            return Json(model);
+        }
+
+        /// <summary>
+        /// Test method to throw an error and see Error page when working on Development Environment
+        /// </summary>
+        /// <returns></returns>
         [Route("some-route")]
         public IActionResult Other()
         {
